@@ -1,0 +1,41 @@
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: {{ .Values.nodePool.name }}
+spec:
+  template:
+    metadata:
+      labels:
+        node.kubernetes.io/role: workload
+    spec:
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
+        name: {{ .Values.nodeClass.name }}
+      expireAfter: {{ .Values.nodePool.expireAfter }}
+      requirements:
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: {{ toJson .Values.nodePool.capacityTypes }}
+        - key: kubernetes.io/arch
+          operator: In
+          values: {{ toJson .Values.nodePool.architectures }}
+        - key: kubernetes.io/os
+          operator: In
+          values: ["linux"]
+        - key: karpenter.k8s.aws/instance-category
+          operator: In
+          values: {{ toJson .Values.nodePool.instanceCategories }}
+        - key: karpenter.k8s.aws/instance-generation
+          operator: Gt
+          values: [{{ .Values.nodePool.instanceGenerationGreaterThan | quote }}]
+  limits:
+    cpu: {{ .Values.nodePool.cpuLimit | quote }}
+    memory: {{ .Values.nodePool.memoryLimit }}
+  disruption:
+    consolidationPolicy: {{ .Values.nodePool.consolidationPolicy }}
+    consolidateAfter: {{ .Values.nodePool.consolidateAfter }}
+    {{- with .Values.nodePool.disruptionBudgets }}
+    budgets:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}

@@ -1,0 +1,31 @@
+# All values are rendered by the Terraform module; defaults here only document the shape.
+clusterName: ""
+nodeRole: ""
+tags: {}
+
+nodeClass:
+  name: default
+  # "al2023" or "bottlerocket"
+  os: al2023
+  amiAliasVersion: latest
+  rootVolumeSizeGiB: 50
+
+nodePool:
+  name: default
+  capacityTypes:
+    - spot
+    - on-demand
+  architectures:
+    - amd64
+  instanceCategories:
+    - c
+    - m
+    - r
+  instanceGenerationGreaterThan: "5"
+  cpuLimit: "1000"
+  memoryLimit: 4000Gi
+  expireAfter: 720h
+  consolidationPolicy: WhenEmptyOrUnderutilized
+  consolidateAfter: 1m
+  disruptionBudgets:
+    - nodes: "10%"

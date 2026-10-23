@@ -1,0 +1,47 @@
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: {{ .Values.nodeClass.name }}
+spec:
+  role: {{ required "nodeRole is required" .Values.nodeRole | quote }}
+  amiSelectorTerms:
+    - alias: {{ printf "%s@%s" .Values.nodeClass.os .Values.nodeClass.amiAliasVersion | quote }}
+  subnetSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: {{ .Values.clusterName | quote }}
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: {{ .Values.clusterName | quote }}
+  metadataOptions:
+    httpEndpoint: enabled
+    httpProtocolIPv6: disabled
+    httpTokens: required
+    # Pods use EKS Pod Identity, so they never need to reach IMDS.
+    httpPutResponseHopLimit: 1
+  blockDeviceMappings:
+    {{- if eq .Values.nodeClass.os "bottlerocket" }}
+    # Bottlerocket: small OS volume + separate data volume for images and ephemeral storage.
+    - deviceName: /dev/xvda
+      ebs:
+        volumeSize: 4Gi
+        volumeType: gp3
+        encrypted: true
+        deleteOnTermination: true
+    - deviceName: /dev/xvdb
+      ebs:
+        volumeSize: {{ printf "%vGi" .Values.nodeClass.rootVolumeSizeGiB }}
+        volumeType: gp3
+        encrypted: true
+        deleteOnTermination: true
+    {{- else }}
+    - deviceName: /dev/xvda
+      ebs:
+        volumeSize: {{ printf "%vGi" .Values.nodeClass.rootVolumeSizeGiB }}
+        volumeType: gp3
+        encrypted: true
+        deleteOnTermination: true
+    {{- end }}
+  {{- with .Values.tags }}
+  tags:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
