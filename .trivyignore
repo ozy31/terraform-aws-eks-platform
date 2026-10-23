@@ -1,0 +1,7 @@
+# Accepted findings. Each entry needs a reason.
+
+# Node security group egress 0.0.0.0/0 (terraform-aws-modules/eks recommended rules).
+# Nodes need to reach ECR, STS, EC2 and other AWS APIs plus public registries via
+# the NAT gateways. Egress is constrained at the network layer (NAT, VPC endpoints,
+# Cilium/NetworkPolicy in-cluster), not on the node security group.
+AWS-0104
